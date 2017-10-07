@@ -51,6 +51,25 @@ class Frame(Sprite):
                           SCREEN_HEIGHT - 24 - CANVAS_HEIGHT))
         self.rect = (0, 0)
 
+
+def color_code_to_color(code):
+    if code == 0:
+        # Transparent pixel
+        color = (255, 0, 255)
+    elif code == 1:
+        # Black pixel
+        color = (0, 0, 0)
+    elif code == 2:
+        # Red pixel
+        color = (255, 0, 0)
+    elif code == 3:
+        # Green pixel
+        color = (0, 255, 0)
+    elif code == 4:
+        # Brown pixel
+        color = (125, 100, 0)
+    return color
+
 class Canvas(Sprite):
     """
     A Canvas is what the player draws new glyphs onto.
@@ -95,28 +114,21 @@ class Canvas(Sprite):
         for y in range(len(self.pixels)):
             for x in range(len(self.pixels[0])):
                 pixel = self.pixels[y][x]
-
-                if pixel == 0:
-                    # Transparent pixel
-                    color = None
-                elif pixel == 1:
-                    # Black pixel
-                    color = (0, 0, 0)
-                elif pixel == 2:
-                    # Red pixel
-                    color = (255, 0, 0)
-                elif pixel == 3:
-                    # Green pixel
-                    color = (0, 255, 0)
-                elif pixel == 4:
-                    # Brown pixel
-                    color = (125, 100, 0)
-
+                color = color_code_to_color(pixel)
                 if color is not None:
                     self.image.fill(color,
                                     (x * CANVAS_ZOOM,
                                      y * CANVAS_ZOOM,
                                      CANVAS_ZOOM, CANVAS_ZOOM))
+
+    def to_surface(self):
+        surf = pygame.Surface((GLYPH_WIDTH, GLYPH_HEIGHT))
+        surf.set_colorkey((255, 0, 255))
+        surf.fill((255, 0, 255))
+        for y in range(0, GLYPH_HEIGHT):
+            for x in range(0, GLYPH_WIDTH):
+                pygame.draw.rect(surf, color_code_to_color(self.pixels[y][x]), (x, y, 1, 1))
+        return surf
 
     def update(self):
         """Update the state of the canvas."""
@@ -187,7 +199,6 @@ class DebugReadout(Sprite):
             self.image.blit(line_img, (0, line_num * 16))
             line_num += 1
 
-
 class Dummy(Sprite):
     def __init__(self):
         Sprite.__init__(self)
@@ -230,75 +241,109 @@ class Stage(Sprite):
     """
     A Stage holds the sprites and backgrounds in the game world.
     """
-    def __init__(self):
+    def __init__(self, bg_name, objects=[]):
         Sprite.__init__(self)
-        self.image = Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        self.rect = (8, 8)
+        self.image = Surface((224, 80))
+        bg = pygame.image.load(os.path.join('data', bg_name)).convert()
+        pygame.transform.scale(bg, (224, 80), self.image)
+        self.rect = (16, 16)
 
         # All objects on the stage
         self.object_space = LayeredUpdates()
-        self.object_space.add(Dummy(), layer=0)
-        self.object_space.add(AnimatedDummy(), layer=0)
+        for i, o in enumerate(objects):
+            self.object_space.add(o, layer=i)
 
     def update(self):
-        self.image.fill((0, 0, 0))
         self.object_space.update()
         self.object_space.draw(self.image)
 
+class TextSprite(Sprite):
+    def __init__(self, message, x, y):
+        Sprite.__init__(self)
+        self.image = Surface((GLYPH_WIDTH * len(message), GLYPH_HEIGHT))
+        self.image.fill((255, 255, 255))
+        for i in range(len(message)):
+            self.image.blit(glyphs[message[i]], (GLYPH_WIDTH*i, 0))
+        self.rect = self.image.get_rect().move((x, y))
+
+class StoryAnimation(object):
+    def __init__(self, delay, stage):
+        self.delay = delay
+        self.stage = stage
+
+class StoryMessage(object):
+    def __init__(self, message, x, y, stage):
+        self.message = message
+        self.x = x
+        self.y = y
+        self.stage = stage
+
+class StoryChoice(object):
+    def __init__(self, choices, stage):
+        self.choices = choices
+        self.stage = stage
+
+class StoryDesignGlyph(object):
+    def __init__(self, glyph_name, stage):
+        self.glyph_name = glyph_name
+        self.stage = stage
 
 class Game(object):
     """
     A Game handles everything in the game.
     """
     def __init__(self):
-        # Modes of the game:
-        # * display  - showing a scene for a period of time
-        # * typing   - typing out a message
-        # * waiting  - waiting for the player to click "next"
-        # * choosing - waiting for the player to pick a choice
-        # * drawing  - letting the player draw a symbol
-        self.mode = 'drawing'
-
         # In-game objects
         self.canvas        = Canvas()
         self.debug_readout = DebugReadout(self.canvas)
         self.frame         = Frame()
-        self.stage         = Stage()
 
         # Collection of all objects (ensures correct drawing order)
         self.object_space = LayeredUpdates()
 
         # Starting mode
-        self._switch_mode('drawing')
+        self._jump('cave', 0)
 
-    def _switch_mode(self, mode):
+    def _jump(self, story, index):
+        self.story = story
+        self.index = index
+        
         self.object_space.empty()
 
-        if mode == 'drawing':
-            self.canvas.clear()
+        self.canvas.clear()
+        st = stories[story][index]
+        if type(st) is StoryDesignGlyph:
             self.object_space.add(self.canvas, layer=3)
-            if DEBUG:
-                self.object_space.add(self.debug_readout, layer=2)
-            self.object_space.add(self.frame, layer=1)
-            self.object_space.add(self.stage, layer=0)
-        elif mode == 'display':
-            if DEBUG:
-                 self.object_space.add(self.debug_readout, layer=2)
-            self.object_space.add(self.frame, layer=1)
-            self.object_space.add(self.stage, layer=0)
+        elif type(st) is StoryMessage:
+            self.object_space.add(TextSprite(st.message, st.x, st.y), layer=3)
+        if DEBUG:
+            self.object_space.add(self.debug_readout, layer=2)
+        self.object_space.add(self.frame, layer=1)
+        self.object_space.add(stories[self.story][self.index].stage, layer=0)
 
     def update(self):
+        st = stories[self.story][self.index]
+        if type(st) is StoryMessage:
+            if pygame.K_SPACE in keys_just_pressed:
+                self._jump(self.story, self.index + 1)
+        elif type(st) is StoryAnimation:
+            pass
+        elif type(st) is StoryDesignGlyph:
+            if pygame.K_SPACE in keys_just_pressed:
+                glyphs[st.glyph_name] = self.canvas.to_surface()
+                self._jump(self.story, self.index + 1)
+
+        
         self.object_space.update()
 
     def draw(self, screen):
         self.object_space.draw(screen)
 
-
 # Input handling
 mouse_x = 0        # The x coordinate of the mouse (in virtual pixels)
 mouse_y = 0        # The y coordinate of the mouse (in virtual pixels)
 mouse_held = False # Whether the mouse button is being held down
-
+keys_just_pressed = []
 
 # Initialize Pygame
 pygame.init()
@@ -309,9 +354,19 @@ clock = pygame.time.Clock()
 debug_font = pygame.font.Font(None, 20)
 virtual_screen = Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
 scaled_screen = Surface(dimensions, 0, virtual_screen)
+
+stories = {
+    'cave': [
+        StoryDesignGlyph('fire', Stage('First Scene.png', [])),
+        StoryMessage(['fire', 'fire'], 40, 40, Stage('First Scene.png', []))
+    ]
+}
+
 game = Game()
 
 while True:
+
+    keys_just_pressed = []
     # Handle user input (mouse and quitting).
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -323,6 +378,8 @@ while True:
             mouse_held = True
         elif event.type == pygame.MOUSEBUTTONUP:
             mouse_held = False
+        elif event.type == pygame.KEYDOWN:
+            keys_just_pressed.append(event.key)
 
     # If the user is painting, place a pixel.
     game.update()
