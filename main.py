@@ -33,13 +33,32 @@ glyphs = {
 
 
 # Object types
+class Frame(Sprite):
+    """
+    A Frame is a stylish border around the screen.
+    """
+    def __init__(self):
+        """Create a new frame."""
+        Sprite.__init__(self)
+        self.image = Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.image.set_colorkey((255, 0, 255))
+        self.image.fill((200, 200, 200))
+        pygame.draw.rect(self.image,
+                         (255, 0, 255),
+                         (8, 8,
+                          SCREEN_WIDTH - 16,
+                          SCREEN_HEIGHT - 24 - CANVAS_HEIGHT))
+        self.rect = (0, 0)
+
 class Canvas(Sprite):
+    """
+    A Canvas is what the player draws new glyphs onto.
+    """
     def __init__(self):
         """Create a new art canvas."""
         Sprite.__init__(self)
         self.pen_x = 0      # X coordinate of the selected pixel
         self.pen_y = 0      # Y coordinate of the selected pixel
-        self.layer = 0      # Which layer to draw the canvas on
         self.image = Surface((GLYPH_WIDTH * CANVAS_ZOOM,
                               GLYPH_HEIGHT * CANVAS_ZOOM))
         self.rect = (CANVAS_X, CANVAS_Y)
@@ -113,7 +132,6 @@ class DebugReadout(Sprite):
     It currently shows the cursor position and the coordinates of the
     selected pixel on the art canvas.
     """
-
     def __init__(self, canvas):
         """Create a new debug readout."""
         Sprite.__init__(self)
@@ -121,7 +139,6 @@ class DebugReadout(Sprite):
         self.image.set_colorkey((255, 0, 255))
         self.rect = (0, 0)
         self.canvas = canvas
-        self.layer = 1
 
     def update(self):
         """Update the readout using current information."""
@@ -159,13 +176,15 @@ virtual_screen = Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
 scaled_screen = Surface(dimensions, 0, virtual_screen)
 
 # In-game objects
-canvas = Canvas()
+canvas        = Canvas()
 debug_readout = DebugReadout(canvas)
+frame         = Frame()
 
 # Collection of all objects (ensures correct drawing order)
 world = LayeredUpdates()
-world.add(canvas)
-world.add(debug_readout)
+world.add(canvas, layer=2)
+world.add(debug_readout, layer=1)
+world.add(frame, layer=0)
 
 while True:
     # Handle user input (mouse and quitting).
