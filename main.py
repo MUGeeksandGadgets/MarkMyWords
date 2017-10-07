@@ -63,6 +63,10 @@ class Canvas(Sprite):
                               GLYPH_HEIGHT * CANVAS_ZOOM))
         self.rect = (CANVAS_X, CANVAS_Y)
 
+        # Helper variables for handling mouse lag
+        self._was_drawing = False
+        self._prev_sel = (0, 0)
+
         # Storage for the canvas' pixels
         self.pixels = []
         for y in range(0, CANVAS_HEIGHT):
@@ -121,8 +125,27 @@ class Canvas(Sprite):
             self.pen_y = (mouse_y - self.rect[1]) / CANVAS_ZOOM
 
             if mouse_held:
+                if self._was_drawing:
+                    # Draw a line from the previous position
+                    # to the current position
+                    """
+                    distance = math.sqrt(
+                                 (self._prev_sel[0]
+                                   - self.pen_x) ** 2
+                                 + (self._prev_sel[1]
+                                    - self.pen_y) ** 2)
+                    angle = 
+                    """
+                else:
+                    self._prev_sel = (self.pen_x, self.pen_y)
+                    self._was_drawing = True
+
                 self.pixels[self.pen_y][self.pen_x] = 1
                 self._redraw_image()
+            else:
+                self._was_drawing = False
+        else:
+            self._was_drawing = False
 
 
 class DebugReadout(Sprite):
