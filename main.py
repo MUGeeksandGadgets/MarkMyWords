@@ -35,11 +35,17 @@ selection_active = False   # Whether a pixel is selected
 selection_x = 0            # The x coordinate of the selected pixel
 selection_y = 0            # The y coordinate of the selected pixel
 
+canvas_pixels = []
+for y in range(0, CANVAS_HEIGHT):
+    canvas_pixels.append([])
+    for x in range(0, CANVAS_WIDTH):
+        canvas_pixels[y].append(0)
 
 
 # Input handling
 mouse_x = 0        # The x coordinate of the mouse (in virtual pixels)
 mouse_y = 0        # The y coordinate of the mouse (in virtual pixels)
+mouse_held = False # Whether the mouse button is being held down
 
 
 # Initialize Pygame
@@ -67,9 +73,17 @@ while True:
                and mouse_y < CANVAS_Y + CANVAS_HEIGHT:
                 selection_active = True
                 selection_x = (mouse_x - CANVAS_X) / CANVAS_ZOOM
-                selection_y = (mouse_x - CANVAS_X) / CANVAS_ZOOM
+                selection_y = (mouse_y - CANVAS_Y) / CANVAS_ZOOM
             else:
                 selection_active = False
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_held = True
+        elif event.type == pygame.MOUSEBUTTONUP:
+            mouse_held = False
+
+    # If the user is painting, place a pixel.
+    if selection_active and mouse_held:
+        canvas_pixels[selection_y][selection_x] = 1
 
     # Draw the screen.
     virtual_screen.fill((0, 0, 0))
@@ -78,6 +92,34 @@ while True:
     virtual_screen.fill((255, 255, 255),
                         (CANVAS_X, CANVAS_Y,
                          CANVAS_WIDTH, CANVAS_HEIGHT))
+
+    for y in range(len(canvas_pixels)):
+        for x in range(len(canvas_pixels[0])):
+            pixel = canvas_pixels[y][x]
+
+            if pixel == 0:
+                # Transparent pixel
+                color = None
+            elif pixel == 1:
+                # Black pixel
+                color = (0, 0, 0)
+            elif pixel == 2:
+                # Red pixel
+                color = (255, 0, 0)
+            elif pixel == 3:
+                # Green pixel
+                color = (0, 255, 0)
+            elif pixel == 4:
+                # Brown pixel
+                color = (125, 100, 0)
+
+            if color is not None:
+                virtual_screen.fill(color,
+                                    (CANVAS_X
+                                     + (x * CANVAS_ZOOM),
+                                     CANVAS_Y
+                                     + (y * CANVAS_ZOOM),
+                                     CANVAS_ZOOM, CANVAS_ZOOM))
 
     # Draw debug messages at the top-left.
     debug_lines = [
