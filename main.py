@@ -164,6 +164,7 @@ class Canvas(Sprite):
         for y in range(0, CANVAS_HEIGHT):
             for x in range(0, CANVAS_WIDTH):
                 self.pixels[y][x] = 0
+        self._redraw_image()
 
 
 class DebugReadout(Sprite):
@@ -207,10 +208,14 @@ class Dummy(Sprite):
 
 
 class AnimatedSprite(Sprite):
-    def __init__(self, frames):
+    def __init__(self, x, y, images):
         Sprite.__init__(self)
+        frames = []
+        for img in images:
+            frames.append(pygame.image.load(os.path.join('data', img)).convert_alpha())
         self.image = Surface((frames[0].get_width(),
                               frames[0].get_height()))
+        self.rect = self.image.get_rect().move((x, y))
         self.timer = 0
         self.frames = frames
         self.frame = 0
@@ -229,11 +234,8 @@ class AnimatedSprite(Sprite):
 
 
 class AnimatedDummy(AnimatedSprite):
-    def __init__(self):
-        AnimatedSprite.__init__(self, [
-            pygame.image.load(os.path.join("data", "dummy.png")),
-            pygame.image.load(os.path.join("data", "dummy2.png"))
-        ])
+    def __init__(self, frames):
+        AnimatedSprite.__init__(self, images)
         self.rect = (40, 40)
 
 
@@ -244,8 +246,7 @@ class Stage(Sprite):
     def __init__(self, bg_name, objects=[]):
         Sprite.__init__(self)
         self.image = Surface((224, 80))
-        bg = pygame.image.load(os.path.join('data', bg_name)).convert()
-        pygame.transform.scale(bg, (224, 80), self.image)
+        self.bg = pygame.image.load(os.path.join('data', bg_name)).convert()
         self.rect = (16, 16)
 
         # All objects on the stage
@@ -255,6 +256,7 @@ class Stage(Sprite):
 
     def update(self):
         self.object_space.update()
+        pygame.transform.scale(self.bg, (224, 80), self.image)
         self.object_space.draw(self.image)
 
 class TextSprite(Sprite):
@@ -333,7 +335,6 @@ class Game(object):
                 glyphs[st.glyph_name] = self.canvas.to_surface()
                 self._jump(self.story, self.index + 1)
 
-        
         self.object_space.update()
 
     def draw(self, screen):
@@ -357,8 +358,19 @@ scaled_screen = Surface(dimensions, 0, virtual_screen)
 
 stories = {
     'cave': [
-        StoryDesignGlyph('fire', Stage('First Scene.png', [])),
-        StoryMessage(['fire', 'fire'], 40, 40, Stage('First Scene.png', []))
+        StoryDesignGlyph(
+            'earth',
+            Stage('Space.png', [AnimatedSprite(90, 20, ['earth0.png', 'earth1.png', 'earth2.png', 'earth3.png', 'earth4.png', 'earth5.png'])])
+        ),
+        StoryDesignGlyph(
+            'country',
+            Stage('First Zoom.png', [])
+        ),
+        StoryMessage(
+            ['earth', 'earth', 'country'],
+            32, 128,
+            Stage('First Scene.png', [])
+        )
     ]
 }
 
