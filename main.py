@@ -1,4 +1,4 @@
-import sys
+import sys, os
 import pygame
 from pygame import Surface
 from pygame.sprite import Sprite
@@ -11,12 +11,13 @@ SCREEN_HEIGHT = 240     # How tall the screen is in "virtual pixels"
 SCREEN_ZOOM = 2         # Scale factor of the whole screen
 FRAMES_PER_SECOND = 40  # How many frames to draw per second
 CANVAS_ZOOM = 4         # Scale factor of the art canvas
+DEBUG = True            # Whether debug information should show up
 
-# Dimensions of the glyphs
+# Dimensions of the glyphs (in virtual pixels)
 GLYPH_WIDTH = 20        # How wide a glyph 
 GLYPH_HEIGHT = 20       # How tall a glyph is
 
-# Dimensions of the art canvas
+# Dimensions of the art canvas (in virtual pixels)
 CANVAS_WIDTH = GLYPH_WIDTH * CANVAS_ZOOM
 CANVAS_HEIGHT = GLYPH_HEIGHT * CANVAS_ZOOM
 CANVAS_X = SCREEN_WIDTH - 8 - CANVAS_WIDTH
@@ -147,6 +148,11 @@ class Canvas(Sprite):
         else:
             self._was_drawing = False
 
+    def clear(self):
+        for y in range(0, CANVAS_HEIGHT):
+            for x in range(0, CANVAS_WIDTH):
+                self.pixels[y][x] = 0
+
 
 class DebugReadout(Sprite):
     """
@@ -173,13 +179,119 @@ class DebugReadout(Sprite):
 
         if self.canvas.is_selecting():
             debug_lines += ['selection: (%d, %d)'
-                            % (canvas.pen_x, canvas.pen_y)]
+                            % (self.canvas.pen_x, self.canvas.pen_y)]
 
         line_num = 0
         for line in debug_lines:
             line_img = debug_font.render(line, False, (255, 255, 255))
             self.image.blit(line_img, (0, line_num * 16))
             line_num += 1
+
+
+class Dummy(Sprite):
+    def __init__(self):
+        Sprite.__init__(self)
+        self.rect = (0, 0)
+        self.image = pygame.image.load(os.path.join("data", "dummy.png"))
+
+
+class AnimatedSprite(Sprite):
+    def __init__(self, frames):
+        Sprite.__init__(self)
+        self.image = Surface((frames[0].get_width(),
+                              frames[0].get_height()))
+        self.timer = 0
+        self.frames = frames
+        self.frame = 0
+
+    def update(self):
+        if hasattr(self, 'extra_update'):
+            self.extra_update()
+
+        self.timer += 1
+
+        if self.timer == 20:
+            self.timer = 0
+            self.frame = (self.frame + 1) % len(self.frames)
+
+        self.image = self.frames[self.frame]
+
+
+class AnimatedDummy(AnimatedSprite):
+    def __init__(self):
+        AnimatedSprite.__init__(self, [
+            pygame.image.load(os.path.join("data", "dummy.png")),
+            pygame.image.load(os.path.join("data", "dummy2.png"))
+        ])
+        self.rect = (40, 40)
+
+
+class Stage(Sprite):
+    """
+    A Stage holds the sprites and backgrounds in the game world.
+    """
+    def __init__(self):
+        Sprite.__init__(self)
+        self.image = Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.rect = (8, 8)
+
+        # All objects on the stage
+        self.object_space = LayeredUpdates()
+        self.object_space.add(Dummy(), layer=0)
+        self.object_space.add(AnimatedDummy(), layer=0)
+
+    def update(self):
+        self.image.fill((0, 0, 0))
+        self.object_space.update()
+        self.object_space.draw(self.image)
+
+
+class Game(object):
+    """
+    A Game handles everything in the game.
+    """
+    def __init__(self):
+        # Modes of the game:
+        # * display  - showing a scene for a period of time
+        # * typing   - typing out a message
+        # * waiting  - waiting for the player to click "next"
+        # * choosing - waiting for the player to pick a choice
+        # * drawing  - letting the player draw a symbol
+        self.mode = 'drawing'
+
+        # In-game objects
+        self.canvas        = Canvas()
+        self.debug_readout = DebugReadout(self.canvas)
+        self.frame         = Frame()
+        self.stage         = Stage()
+
+        # Collection of all objects (ensures correct drawing order)
+        self.object_space = LayeredUpdates()
+
+        # Starting mode
+        self._switch_mode('drawing')
+
+    def _switch_mode(self, mode):
+        self.object_space.empty()
+
+        if mode == 'drawing':
+            self.canvas.clear()
+            self.object_space.add(self.canvas, layer=3)
+            if DEBUG:
+                self.object_space.add(self.debug_readout, layer=2)
+            self.object_space.add(self.frame, layer=1)
+            self.object_space.add(self.stage, layer=0)
+        elif mode == 'display':
+            if DEBUG:
+                 self.object_space.add(self.debug_readout, layer=2)
+            self.object_space.add(self.frame, layer=1)
+            self.object_space.add(self.stage, layer=0)
+
+    def update(self):
+        self.object_space.update()
+
+    def draw(self, screen):
+        self.object_space.draw(screen)
 
 
 # Input handling
@@ -197,17 +309,7 @@ clock = pygame.time.Clock()
 debug_font = pygame.font.Font(None, 20)
 virtual_screen = Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
 scaled_screen = Surface(dimensions, 0, virtual_screen)
-
-# In-game objects
-canvas        = Canvas()
-debug_readout = DebugReadout(canvas)
-frame         = Frame()
-
-# Collection of all objects (ensures correct drawing order)
-world = LayeredUpdates()
-world.add(canvas, layer=2)
-world.add(debug_readout, layer=1)
-world.add(frame, layer=0)
+game = Game()
 
 while True:
     # Handle user input (mouse and quitting).
@@ -223,11 +325,11 @@ while True:
             mouse_held = False
 
     # If the user is painting, place a pixel.
-    world.update()
+    game.update()
 
     # Draw everything onto the virtual screen.
     virtual_screen.fill((0, 0, 0))
-    world.draw(virtual_screen)
+    game.draw(virtual_screen)
 
     # Scale and draw onto the real screen.
     pygame.transform.scale(virtual_screen, dimensions, scaled_screen)
