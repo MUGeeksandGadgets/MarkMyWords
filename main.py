@@ -41,15 +41,8 @@ class Frame(Sprite):
     def __init__(self):
         """Create a new frame."""
         Sprite.__init__(self)
-        self.image = Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        self.image.set_colorkey((255, 0, 255))
-        self.image.fill((200, 200, 200))
-        pygame.draw.rect(self.image,
-                         (255, 0, 255),
-                         (8, 8,
-                          SCREEN_WIDTH - 16,
-                          SCREEN_HEIGHT - 24 - CANVAS_HEIGHT))
-        self.rect = (0, 0)
+        self.image = pygame.image.load(os.path.join('data', 'frame.png')).convert_alpha()
+        self.rect = self.image.get_rect()
 
 
 def color_code_to_color(code):
@@ -368,8 +361,8 @@ stories = {
         ),
         StoryMessage(
             ['earth', 'earth', 'country'],
-            32, 128,
-            Stage('First Scene.png', [])
+            32, 19,
+            Stage('First Scene.png', [AnimatedSprite(20, 26, ['dummy.png', 'dummy2.png'])])
         )
     ]
 }
