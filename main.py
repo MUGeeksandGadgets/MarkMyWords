@@ -41,7 +41,8 @@ glyphs = {
 emblems = {
     'earth': pygame.image.load(os.path.join('data', 'earth0.png')),
     'person': pygame.image.load(os.path.join('data', 'Drawable Images', 'person.png')),
-    'club': pygame.image.load(os.path.join('data', 'Drawable Images', 'weapon.png'))
+    'club': pygame.image.load(os.path.join('data', 'Drawable Images', 'weapon.png')),
+    'surrender': pygame.image.load(os.path.join('data', 'bigFlag.png'))
 }
 
 # Object types
@@ -250,17 +251,27 @@ class Dummy(Sprite):
         self.image = pygame.image.load(os.path.join("data", "dummy.png"))
 
 class AnimatedSprite(Sprite):
-    def __init__(self, x, y, images):
+    def __init__(self):
         Sprite.__init__(self)
+
+    def setup(self, x, y, images):
         frames = []
         for img in images:
             frames.append(pygame.image.load(os.path.join('data', img)).convert_alpha())
-        self.image = Surface((frames[0].get_width(),
-                              frames[0].get_height()))
+        self.image = frames[0]
         self.rect = self.image.get_rect().move((x, y))
         self.timer = 0
         self.frames = frames
         self.frame = 0
+
+    def clone(self, x, y):
+        spr = AnimatedSprite()
+        spr.frames = self.frames
+        spr.timer = 0
+        spr.image = spr.frames[0]
+        spr.rect = spr.image.get_rect().move((x, y))
+        spr.frame = 0
+        return spr
 
     def update(self):
         if hasattr(self, 'extra_update'):
@@ -526,24 +537,37 @@ scaled_screen = Surface(dimensions, 0, virtual_screen)
 
 # Story sequence
 
-earth = AnimatedSprite(65, 5, ['earth0.png', 'earth1.png', 'earth2.png', 'earth3.png', 'earth4.png', 'earth5.png'])
-campfire = AnimatedSprite(60, 41, ['fire1.png', 'fire2.png'])
+earth = AnimatedSprite()
+earth.setup(65, 5, ['earth0.png', 'earth1.png', 'earth2.png', 'earth3.png', 'earth4.png', 'earth5.png'])
+campfire = AnimatedSprite()
+campfire.setup(60, 41, ['fire1.png', 'fire2.png'])
 
 # arguments so you dont forget: setup(self, x, y, sheet_name, ncols, nrows, clip_region)
 cavepig = AnimatedSheet()
 cavepig.setup(0, 0, 'Main Cavemen.png', 1, 2, (97, 16, 31, 41))
+cavepig2 = AnimatedSheet()
+cavepig2.setup(0, 0, 'Main Cavemen 2.png', 1, 2, (97, 16, 31, 41))
 
-cavepig_group = [cavepig.clone(100, 27), cavepig.clone(160, 27, True)]
+cavepig_group = [cavepig2.clone(100, 27), cavepig.clone(160, 27, False)]
 
 lizard = AnimatedSheet()
 lizard.setup(0, 0, 'Lizard Caveman.png', 1, 2, (97, 16, 31, 41))
+lizard_group = [lizard.clone(16, 27, True)]
 
-lizard_group = [lizard.clone(25, 27, True)]
+lizard_still = AnimatedSheet()
+lizard_still.setup(0, 0, 'Lizard Caveman.png', 1, 1, (97, 16, 31, 41))
+lizard_still_group = [lizard_still.clone(16, 27, True)]
+
 club = AnimatedSheet()
 club.setup(0, 0, 'Wooden Club_00_00.png', 1, 1, (0, 0, 32, 32))
 
+surrender_flag = AnimatedSheet()
+surrender_flag.setup(0, 0, 'surrenderFlag.png', 1, 1, (0, 0, 16, 16))
+
 stories = {
     'cave': [
+        StoryMusic('Intro.ogg'),
+        
         # Showing the planet
         StoryAnimation(
             40,
@@ -580,6 +604,8 @@ stories = {
         ),
 
         # The lizard arrives!
+        StoryMusic('primitive.ogg'),
+
         StoryAnimation(
             40,
             Stage('First Scene.png', [campfire]  + cavepig_group + lizard_group)
@@ -588,7 +614,7 @@ stories = {
         # Asking, "is it a person"?
         StoryMessage(
             ['person', 'question'],
-            64, 19,
+            94, 19,
             Stage('First Scene.png', [campfire] + cavepig_group + lizard_group)
         ),
 
@@ -596,68 +622,81 @@ stories = {
         StoryMusic('primitive.ogg'),
         StoryAnimation(
             40,
-            Stage('First Scene.png', [campfire]  + cavepig_group + lizard_group + [club.clone(44, 29)])
+            Stage('First Scene.png', [campfire]  + cavepig_group + lizard_still_group + [club.clone(44, 29)])
         ),
         StoryDesignGlyph(
             'club',
-            Stage('First Scene.png', [campfire] + cavepig_group + lizard_group + [club.clone(44, 29)])
+            Stage('First Scene.png', [campfire] + cavepig_group + lizard_still_group + [club.clone(44, 29)])
         ),
 
         # "Person club!"
         StoryMessage(
             ['person', 'club', 'exclaim'],
-            32, 19,
-            Stage('First Scene.png', [campfire]  + cavepig_group + lizard_group + [club.clone(44, 29)])
+            92, 19,
+            Stage('First Scene.png', [campfire]  + cavepig_group + lizard_still_group + [club.clone(44, 29)])
         ),
+        StoryMessage(
+            ['person', 'club', 'person', 'question', 'exclaim'],
+            92, 19,
+            Stage('First Scene.png', [campfire]  + cavepig_group + lizard_still_group + [club.clone(44, 29)])
+        ),
+
         # Pig 1 gets out a club
         # Pig 2 gets out a surrender flag
         StoryMessage(
             ['country', 'exclaim', 'country', 'exclaim'],
             32, 19,
-            Stage('First Scene.png', [campfire] + cavepig_group)
+            Stage('First Scene.png', [campfire] + cavepig_group + lizard_still_group + [club.clone(44, 29), club.clone(90, 31, True)])
         ),
-        StoryMessage(
-            ['earth', 'period'],
-            42, 29,
-            Stage('First Scene.png', [campfire] + cavepig_group)
+        StoryDesignGlyph(
+            'surrender',
+            Stage('First Scene.png', [campfire] + cavepig_group + lizard_still_group + [club.clone(44, 29), club.clone(90, 31, True), surrender_flag.clone(165, 34)])
         ),
         StoryChoice(
-            [(['earth', 'country'], 'cave')],
-            Stage('First Scene.png', [campfire] + cavepig_group)
+            [(['person', 'club', 'person', 'period'], 'cave_fight'),
+             (['surrender', 'period'], 'cave_surrender')],
+            Stage('First Scene.png', [campfire] + cavepig_group + lizard_still_group + [club.clone(44, 29), club.clone(90, 31, True), surrender_flag.clone(165, 34)])
         ),
-        #StoryChoice(
-        #    [(['fight', 'evil', 'person'], 'cave_fight'),
-        #     (['surrender', 'country'], 'cave_surrender')],
-        #    Stage('First Scene.png', [campfire])
-        #),
-        StoryAnimation(
-            40,
-            Stage('primativeHomeIn.png', [])
-        ),
-        StoryAnimation(
-            40,
-            Stage('First Scene.png', [campfire]  + cavepig_group)
+    ],
+    'cave_fight': [
+        StoryMessage(
+            ['person', 'club', 'person', 'exclaim'],
+            100, 19,
+            Stage('First Scene.png', [campfire] + lizard_still_group + cavepig_group + [club.clone(44, 29), club.clone(90, 31, True), surrender_flag.clone(165, 34)])
         ),
         StoryAnimation(
             40,
-            Stage('Tents.png', [])
+            Stage('First Scene.png', [campfire, lizard_still.clone(29, 27, True), club.clone(34, 27), cavepig2.clone(70, 29), club.clone(60, 29, True), cavepig.clone(160, 27)])
         ),
         StoryAnimation(
             40,
-            Stage('Castle.png', [])
+            Stage('First Scene.png', [campfire, lizard_still.clone(31, 27, True), club.clone(36, 27), cavepig2.clone(68, 29), club.clone(58, 29, True), cavepig.clone(160, 27)])
+        ),
+        StoryAnimation(
+            80,
+            Stage('First Scene.png', [campfire, lizard_still.clone(29, 27, True), club.clone(34, 27), cavepig2.clone(70, 29), club.clone(60, 29, True), cavepig.clone(160, 27)])
         ),
         StoryAnimation(
             40,
-            Stage('roadToFair.png', [])
+            Stage('First Scene.png', [campfire, lizard_still.clone(29, 27, True), campfire.clone(29, 27), cavepig2.clone(70, 29), club.clone(60, 29, True), cavepig.clone(160, 27)])
         ),
-        StoryAnimation(
-            40,
-            Stage('renaissanceFair.png', [])
+        StoryMessage(
+            ['club', 'club', 'club', 'exclaim'],
+            20, 19,
+            Stage('First Scene.png', [campfire, lizard_still.clone(29, 27, True), campfire.clone(29, 27), cavepig2.clone(70, 29, True), club.clone(40, 29, True), cavepig.clone(160, 27)])
         ),
-        StoryAnimation(
-            40,
-            Stage('roadToFair.png', [])
-        ),
+
+
+        # Bronze Age
+
+        # 3000 BC
+
+        #
+    ],
+    'cave_surrender': [
+        StoryMessage(['person', 'surrender', 'exclaim'],
+                     165, 19,
+                     Stage('First Scene.png', [campfire] + lizard_still_group + [cavepig2.clone(100, 27, True), cavepig.clone(160, 27), club.clone(44, 29), club.clone(90, 31, True), surrender_flag.clone(165, 34)]))
     ]
 }
 
@@ -700,3 +739,4 @@ while True:
 
     # Wait for the next frame.
     clock.tick(FRAMES_PER_SECOND)
+
