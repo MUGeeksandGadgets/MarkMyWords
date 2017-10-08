@@ -5,7 +5,6 @@ from pygame import Surface
 from pygame.sprite import Sprite
 from pygame.sprite import LayeredUpdates
 
-
 # Constants
 SCREEN_WIDTH = 256      # How wide the screen is in "virtual pixels"
 SCREEN_HEIGHT = 240     # How tall the screen is in "virtual pixels"
@@ -33,13 +32,16 @@ glyphs = {
     'person':  None,
     'earth':   None,
     'exclaim': pygame.image.load(os.path.join('data', 'exclaim.png')),
+    'question': pygame.image.load(os.path.join('data', 'question.png')),
     'period': pygame.image.load(os.path.join('data', 'period.png')),
     'comma': pygame.image.load(os.path.join('data', 'comma.png'))
 }
 
 # Emblems (helpful indications of what is being named)
 emblems = {
-    'earth': pygame.image.load(os.path.join('data', 'earth0.png'))
+    'earth': pygame.image.load(os.path.join('data', 'earth0.png')),
+    'person': pygame.image.load(os.path.join('data', 'Drawable Images', 'person.png')),
+    'club': pygame.image.load(os.path.join('data', 'Drawable Images', 'weapon.png'))
 }
 
 # Object types
@@ -356,6 +358,10 @@ class Stage(Sprite):
         pygame.transform.scale(self.bg, (224, 80), self.image)
         self.object_space.draw(self.image)
 
+def render_text(surf, message, x, y):
+    for i in range(len(message)):
+        surf.blit(glyphs[message[i]], (x + GLYPH_WIDTH*i, y))
+
 class TextSprite(Sprite):
     def __init__(self, message, x, y):
         Sprite.__init__(self)
@@ -368,8 +374,7 @@ class TextSprite(Sprite):
         pygame.draw.rect(self.image, (0, 0, 0), (0, 0, GLYPH_WIDTH * len(message), GLYPH_HEIGHT), 1)
 
         # Draw each letter.
-        for i in range(len(message)):
-            self.image.blit(glyphs[message[i]], (GLYPH_WIDTH*i, 0))
+        render_text(self.image, message, 0, 0)
 
         self.rect = self.image.get_rect().move((x, y))
 
@@ -395,24 +400,39 @@ class StoryDesignGlyph(object):
         self.glyph_name = glyph_name
         self.stage = stage
 
+class StoryMusic(object):
+    def __init__(self, song):
+        self.song = song
+
+    def activate(self):
+        pygame.mixer.music.load(os.path.join('music', self.song))
+        pygame.mixer.music.play(-1)
+
 class ChoiceMatrix(Sprite):
     def __init__(self, game, choices):
-        Sprite.__init__()
+        Sprite.__init__(self)
 
         self.game = game
         self.choices = choices
 
         # Draw the choice matrix
+        self._redraw_image()
 
     def _redraw_image(self):
-        for choice in self.choices:
-            pass
+        mat_width = max([GLYPH_WIDTH * len(ch[0]) for ch in self.choices])
+        self.image = pygame.Surface((mat_width, GLYPH_HEIGHT * len(self.choices)))
+        self.image.fill((0, 0, 255))
+        for i, ch in enumerate(self.choices):
+            self.image.fill((200, 200, 255), pygame.Rect(0, i*GLYPH_HEIGHT, mat_width - 1, GLYPH_HEIGHT - 1))
+            render_text(self.image, ch[0], 0, i*GLYPH_HEIGHT)
+        self.rect = self.image.get_rect().move((20, 120))
 
     def update(self):
         # Update sprite if hovered over a choice
-
-        # Activate choice if clicked
-        pass
+        if self.rect.collidepoint(mouse_x, mouse_y):
+            if mouse_down:
+                choice_index = int(math.floor((mouse_y - self.rect.y) / GLYPH_HEIGHT))
+                self.game._jump(self.choices[choice_index][1], 0)
 
 class Game(object):
     """
@@ -456,7 +476,10 @@ class Game(object):
         elif type(st) is StoryMessage:
             self.object_space.add(TextSprite(st.message, st.x, st.y), layer=3)
         elif type(st) is StoryChoice:
-            self.object_space.add(ChoiceMatrix(self, st.choices))
+            self.object_space.add(ChoiceMatrix(self, st.choices), layer=3)
+        elif type(st) is StoryMusic:
+            st.activate()
+            self._jump(self.story, self.index + 1)
         if DEBUG:
             self.object_space.add(self.debug_readout, layer=2)
         self.object_space.add(self.frame, layer=1)
@@ -512,8 +535,16 @@ cavepig.setup(0, 0, 'Main Cavemen.png', 1, 2, (97, 16, 31, 41))
 
 cavepig_group = [cavepig.clone(100, 27), cavepig.clone(160, 27, True)]
 
+lizard = AnimatedSheet()
+lizard.setup(0, 0, 'Lizard Caveman.png', 1, 2, (97, 16, 31, 41))
+
+lizard_group = [lizard.clone(25, 27, True)]
+club = AnimatedSheet()
+club.setup(0, 0, 'Wooden Club_00_00.png', 1, 1, (0, 0, 32, 32))
+
 stories = {
     'cave': [
+        # Showing the planet
         StoryAnimation(
             40,
             Stage('Space.png', [earth])
@@ -522,6 +553,8 @@ stories = {
             'earth',
             Stage('Space.png', [earth])
         ),
+        
+        # Showing the country
         StoryAnimation(
             40,
             Stage('First Zoom.png', [])
@@ -530,10 +563,54 @@ stories = {
             'country',
             Stage('First Zoom.png', [])
         ),
+
+        # Showing the village with pigs in it
         StoryAnimation(
             40,
             Stage('First Scene.png', [campfire] + cavepig_group)
         ),
+        StoryDesignGlyph(
+            'person',
+            Stage('First Scene.png', [campfire] + cavepig_group)
+        ),
+        StoryMessage(
+            ['person', 'person', 'exclaim'],
+            64, 19,
+            Stage('First Scene.png', [campfire] + cavepig_group)
+        ),
+
+        # The lizard arrives!
+        StoryAnimation(
+            40,
+            Stage('First Scene.png', [campfire]  + cavepig_group + lizard_group)
+        ),
+
+        # Asking, "is it a person"?
+        StoryMessage(
+            ['person', 'question'],
+            64, 19,
+            Stage('First Scene.png', [campfire] + cavepig_group + lizard_group)
+        ),
+
+        # Lizard gets out the club
+        StoryMusic('primitive.ogg'),
+        StoryAnimation(
+            40,
+            Stage('First Scene.png', [campfire]  + cavepig_group + lizard_group + [club.clone(44, 29)])
+        ),
+        StoryDesignGlyph(
+            'club',
+            Stage('First Scene.png', [campfire] + cavepig_group + lizard_group + [club.clone(44, 29)])
+        ),
+
+        # "Person club!"
+        StoryMessage(
+            ['person', 'club', 'exclaim'],
+            32, 19,
+            Stage('First Scene.png', [campfire]  + cavepig_group + lizard_group + [club.clone(44, 29)])
+        ),
+        # Pig 1 gets out a club
+        # Pig 2 gets out a surrender flag
         StoryMessage(
             ['country', 'exclaim', 'country', 'exclaim'],
             32, 19,
@@ -542,6 +619,10 @@ stories = {
         StoryMessage(
             ['earth', 'period'],
             42, 29,
+            Stage('First Scene.png', [campfire] + cavepig_group)
+        ),
+        StoryChoice(
+            [(['earth', 'country'], 'cave')],
             Stage('First Scene.png', [campfire] + cavepig_group)
         ),
         #StoryChoice(
@@ -555,12 +636,7 @@ stories = {
         ),
         StoryAnimation(
             40,
-            Stage('First Scene.png', []  + cavepig_group)
-        ),
-        StoryMessage(
-            ['exclaim'],
-            32, 19,
-            Stage('First Scene.png', [campfire] + cavepig_group)
+            Stage('First Scene.png', [campfire]  + cavepig_group)
         ),
         StoryAnimation(
             40,
@@ -588,7 +664,7 @@ stories = {
 
 game = Game()
 
-pygame.mixer.music.load(os.path.join('music', 'primitive.ogg'))
+pygame.mixer.music.load(os.path.join('music', 'Intro.ogg'))
 pygame.mixer.music.play(-1)
 
 while True:
