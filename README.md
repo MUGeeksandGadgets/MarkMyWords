@@ -26,3 +26,20 @@ If you have Python 3, you may need to specify that you want to run
 the game with Python 2.  To do that, use this command:
 
     python2 main.py
+
+## License
+Music license info is in music/License.txt
+
+All code is licensed under the GNU GPLv3.
+
+All art is licensed under the CC Attribution-ShareAlike 3.0 Unported.
+
+## Credits
+
+Every contributor is from the Geeks and Gadgets Club at Marshall University!
+
+Music: Isaac B, Chris R, Chad M; more details in music/License.txt
+
+Art: Everyone (Isaac B, Mya J, Anthony B, Patrick S, Brandon D, Chad M, Brody S, Chris R, Chris M, Charlie M)
+
+Coding: Chris M and Charlie M.
