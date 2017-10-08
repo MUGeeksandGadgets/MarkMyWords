@@ -193,8 +193,8 @@ class Canvas(Sprite):
         """Update the state of the canvas."""
         # If the user is painting, place a pixel.
         if self.is_selecting():
-            self.pen_x = math.floor((mouse_x - self.rect[0]) / CANVAS_ZOOM)
-            self.pen_y = math.floor((mouse_y - self.rect[1]) / CANVAS_ZOOM)
+            self.pen_x = int(math.floor((mouse_x - self.rect[0]) / CANVAS_ZOOM))
+            self.pen_y = int(math.floor((mouse_y - self.rect[1]) / CANVAS_ZOOM))
 
             if mouse_held:
                 if self._was_drawing:
