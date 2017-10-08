@@ -11,7 +11,7 @@ SCREEN_HEIGHT = 240     # How tall the screen is in "virtual pixels"
 SCREEN_ZOOM = 2         # Scale factor of the whole screen
 FRAMES_PER_SECOND = 40  # How many frames to draw per second
 CANVAS_ZOOM = 4         # Scale factor of the art canvas
-DEBUG = True            # Whether debug information should show up
+DEBUG = False           # Whether debug information should show up
 
 # Dimensions of the glyphs (in virtual pixels)
 GLYPH_WIDTH = 20        # How wide a glyph 
@@ -29,9 +29,17 @@ glyphs = {
     'fire':    None, 
     'water':   None,
     'house':   None,
-    'person':  None
+    'person':  None,
+    'earth':   None,
+    'exclaim': pygame.image.load(os.path.join('data', 'exclaim.png')),
+    'period': pygame.image.load(os.path.join('data', 'period.png')),
+    'comma': pygame.image.load(os.path.join('data', 'comma.png'))
 }
 
+# Emblems (helpful indications of what is being named)
+emblems = {
+    'earth': pygame.image.load(os.path.join('data', 'earth0.png'))
+}
 
 # Object types
 class Frame(Sprite):
@@ -41,7 +49,7 @@ class Frame(Sprite):
     def __init__(self):
         """Create a new frame."""
         Sprite.__init__(self)
-        self.image = pygame.image.load(os.path.join('data', 'frame.png')).convert_alpha()
+        self.image = pygame.image.load(os.path.join('data', 'BronzeAgeFrame.png')).convert_alpha()
         self.rect = self.image.get_rect()
 
 
@@ -62,6 +70,38 @@ def color_code_to_color(code):
         # Brown pixel
         color = (125, 100, 0)
     return color
+
+class OkayButton(Sprite):
+    """
+    An OkayButton accepts the current image.
+    """
+    def __init__(self, x, y, game):
+        Sprite.__init__(self)
+        self.image = pygame.image.load(os.path.join('data', 'okay.png'))
+        self.rect = (x, y)
+        self.game = game
+
+    def update(self):
+        game = self.game
+        if mouse_down:
+            # activate the button if mouse is on button
+            if mouse_x >= self.rect[0] \
+               and mouse_x < self.rect[0] + self.image.get_width() \
+               and mouse_y >= self.rect[1] \
+               and mouse_y < self.rect[1] + self.image.get_height():
+                glyphs[stories[game.story][game.index].glyph_name] = \
+                  game.canvas.to_surface()
+                game._jump(game.story, game.index + 1)
+
+class EqualsSign(Sprite):
+    def __init__(self, x, y):
+        Sprite.__init__(self)
+        self.rect = (x, y)
+        self.image = Surface((40, 40))
+        self.image.set_colorkey((255, 0, 255))
+        self.image.fill((255, 0, 255))
+        pygame.draw.rect(self.image, (0, 0, 0), (0, 0, 40, 10))
+        pygame.draw.rect(self.image, (0, 0, 0), (0, 30, 40, 10))
 
 class Canvas(Sprite):
     """
@@ -108,11 +148,12 @@ class Canvas(Sprite):
             for x in range(len(self.pixels[0])):
                 pixel = self.pixels[y][x]
                 color = color_code_to_color(pixel)
-                if color is not None:
-                    self.image.fill(color,
-                                    (x * CANVAS_ZOOM,
-                                     y * CANVAS_ZOOM,
-                                     CANVAS_ZOOM, CANVAS_ZOOM))
+                if color == (255, 0, 255):
+                    color = (255, 255, 255)
+                self.image.fill(color,
+                                (x * CANVAS_ZOOM,
+                                 y * CANVAS_ZOOM,
+                                 CANVAS_ZOOM, CANVAS_ZOOM))
 
     def to_surface(self):
         surf = pygame.Surface((GLYPH_WIDTH, GLYPH_HEIGHT))
@@ -256,9 +297,17 @@ class TextSprite(Sprite):
     def __init__(self, message, x, y):
         Sprite.__init__(self)
         self.image = Surface((GLYPH_WIDTH * len(message), GLYPH_HEIGHT))
+
+        # Make the message box white.
         self.image.fill((255, 255, 255))
+
+        # Draw the outline of the message box.
+        pygame.draw.rect(self.image, (0, 0, 0), (0, 0, GLYPH_WIDTH * len(message), GLYPH_HEIGHT), 1)
+
+        # Draw each letter.
         for i in range(len(message)):
             self.image.blit(glyphs[message[i]], (GLYPH_WIDTH*i, 0))
+
         self.rect = self.image.get_rect().move((x, y))
 
 class StoryAnimation(object):
@@ -292,6 +341,10 @@ class Game(object):
         self.canvas        = Canvas()
         self.debug_readout = DebugReadout(self.canvas)
         self.frame         = Frame()
+        self.okay_btn      = OkayButton(CANVAS_X, CANVAS_Y - 40, self)
+        self.emblem        = Sprite()
+        self.emblem.rect = (25, 150)
+        self.equalssign    = EqualsSign(105, 180)
 
         # Collection of all objects (ensures correct drawing order)
         self.object_space = LayeredUpdates()
@@ -307,8 +360,17 @@ class Game(object):
 
         self.canvas.clear()
         st = stories[story][index]
-        if type(st) is StoryDesignGlyph:
+        if type(st) is StoryAnimation:
+            self.timer = st.delay
+        elif type(st) is StoryDesignGlyph:
+            if st.glyph_name in emblems:
+                self.emblem.image = emblems[st.glyph_name]
+            else:
+                self.emblem.image = Surface((0, 0))
+            self.object_space.add(self.emblem, layer=3)
+            self.object_space.add(self.okay_btn, layer=3)
             self.object_space.add(self.canvas, layer=3)
+            self.object_space.add(self.equalssign, layer=3)
         elif type(st) is StoryMessage:
             self.object_space.add(TextSprite(st.message, st.x, st.y), layer=3)
         if DEBUG:
@@ -322,11 +384,16 @@ class Game(object):
             if pygame.K_SPACE in keys_just_pressed:
                 self._jump(self.story, self.index + 1)
         elif type(st) is StoryAnimation:
-            pass
+            self.timer -= 1
+            if self.timer <= 0:
+                self._jump(self.story, self.index + 1)
         elif type(st) is StoryDesignGlyph:
+            """
             if pygame.K_SPACE in keys_just_pressed:
                 glyphs[st.glyph_name] = self.canvas.to_surface()
                 self._jump(self.story, self.index + 1)
+            """
+            pass
 
         self.object_space.update()
 
@@ -337,6 +404,7 @@ class Game(object):
 mouse_x = 0        # The x coordinate of the mouse (in virtual pixels)
 mouse_y = 0        # The y coordinate of the mouse (in virtual pixels)
 mouse_held = False # Whether the mouse button is being held down
+mouse_down = False # Whether the mouse buttos was just now pressed
 keys_just_pressed = []
 
 # Initialize Pygame
@@ -349,29 +417,56 @@ debug_font = pygame.font.Font(None, 20)
 virtual_screen = Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
 scaled_screen = Surface(dimensions, 0, virtual_screen)
 
+# Story sequence
+
+earth = AnimatedSprite(65, 5, ['earth0.png', 'earth1.png', 'earth2.png', 'earth3.png', 'earth4.png', 'earth5.png'])
+campfire = AnimatedSprite(60, 41, ['fire1.png', 'fire2.png'])
+
 stories = {
     'cave': [
+        StoryAnimation(
+            40,
+            Stage('Space.png', [earth])
+        ),
         StoryDesignGlyph(
             'earth',
-            Stage('Space.png', [AnimatedSprite(90, 20, ['earth0.png', 'earth1.png', 'earth2.png', 'earth3.png', 'earth4.png', 'earth5.png'])])
+            Stage('Space.png', [earth])
+        ),
+        StoryAnimation(
+            40,
+            Stage('First Zoom.png', [])
         ),
         StoryDesignGlyph(
             'country',
             Stage('First Zoom.png', [])
         ),
+        StoryAnimation(
+            40,
+            Stage('First Scene.png', [campfire])
+        ),
         StoryMessage(
-            ['earth', 'earth', 'country'],
+            ['country', 'exclaim', 'country', 'exclaim'],
             32, 19,
-            Stage('First Scene.png', [AnimatedSprite(20, 26, ['dummy.png', 'dummy2.png'])])
+            Stage('First Scene.png', [campfire])
+        ),
+        StoryMessage(
+            ['earth', 'period'],
+            42, 29,
+            Stage('First Scene.png', [campfire])
         )
     ]
 }
 
+
 game = Game()
+
+pygame.mixer.music.load(os.path.join('music', 'primitive.ogg'))
+pygame.mixer.music.play(-1)
 
 while True:
 
     keys_just_pressed = []
+    mouse_down = False
     # Handle user input (mouse and quitting).
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -381,6 +476,7 @@ while True:
             mouse_y = event.pos[1] / SCREEN_ZOOM
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_held = True
+            mouse_down = True
         elif event.type == pygame.MOUSEBUTTONUP:
             mouse_held = False
         elif event.type == pygame.KEYDOWN:
