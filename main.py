@@ -13,7 +13,7 @@ FRAMES_PER_SECOND = 40  # How many frames to draw per second
 CANVAS_ZOOM = 4         # Scale factor of the art canvas
 DEBUG = False           # Whether debug information should show up
 #START_STORY = 'cave'
-START_STORY = 'bronze_agree'
+START_STORY = 'future'
 
 # Dimensions of the glyphs (in virtual pixels)
 GLYPH_WIDTH = 20        # How wide a glyph 
@@ -45,7 +45,15 @@ emblems = {
     'earth': pygame.image.load(os.path.join('data', 'earth0.png')),
     'person': pygame.image.load(os.path.join('data', 'Drawable Images', 'person.png')),
     'club': pygame.image.load(os.path.join('data', 'Drawable Images', 'weapon.png')),
-    'surrender': pygame.image.load(os.path.join('data', 'bigFlag.png'))
+    'surrender': pygame.image.load(os.path.join('data', 'bigFlag.png')),
+    'tool': pygame.image.load(os.path.join('data', 'Drawable Images', 'tool.png')),
+    'magic': pygame.image.load(os.path.join('data', 'Drawable Images', 'magic.png')),
+    'art': pygame.image.load(os.path.join('data', 'Drawable Images', 'art.png')),
+    'think': pygame.image.load(os.path.join('data', 'Drawable Images', 'thinking.png')),
+    'team': pygame.image.load(os.path.join('data', 'Drawable Images', 'team.png')),
+    'country': pygame.image.load(os.path.join('data', 'Drawable Images', 'country.png')),
+    'old', pygame.image.load(os.path.join('data', 'Drawable Images', 'antiquated.png')),
+    'give', pygame.image.load(os.path.join('data', 'Drawable Images', 'give.png'))
 }
 
 # Object types
@@ -56,7 +64,9 @@ class Frame(Sprite):
     def __init__(self):
         """Create a new frame."""
         Sprite.__init__(self)
-        self.image = pygame.image.load(os.path.join('data', 'BronzeAgeFrame.png')).convert_alpha()
+        self.set_image('BronzeAgeFrame.png')
+    def set_image(self, frame_name):
+        self.image = pygame.image.load(os.path.join('data', frame_name)).convert_alpha()
         self.rect = self.image.get_rect()
 
 
@@ -393,6 +403,10 @@ class TextSprite(Sprite):
 
         self.rect = self.image.get_rect().move((x, y))
 
+class StoryJump(object):
+    def __init__(self, story):
+        self.story = story
+
 class StoryAnimation(object):
     def __init__(self, delay, stage):
         self.delay = delay
@@ -414,6 +428,10 @@ class StoryDesignGlyph(object):
     def __init__(self, glyph_name, stage):
         self.glyph_name = glyph_name
         self.stage = stage
+
+class StoryFrame(object):
+    def __init__(self, frame_name):
+        self.frame_name = frame_name
 
 class StoryMusic(object):
     def __init__(self, song):
@@ -479,6 +497,8 @@ class Game(object):
         st = stories[story][index]
         if type(st) is StoryAnimation:
             self.timer = st.delay
+        elif type(st) is StoryJump:
+            self._jump(st.story, 0)
         elif type(st) is StoryDesignGlyph:
             if st.glyph_name in emblems:
                 self.emblem.image = emblems[st.glyph_name]
@@ -494,6 +514,9 @@ class Game(object):
             self.object_space.add(ChoiceMatrix(self, st.choices), layer=3)
         elif type(st) is StoryMusic:
             st.activate()
+            self._jump(self.story, self.index + 1)
+        elif type(st) is StoryFrame:
+            self.frame.set_image(st.frame_name)
             self._jump(self.story, self.index + 1)
         if DEBUG:
             self.object_space.add(self.debug_readout, layer=2)
@@ -601,6 +624,42 @@ cat.setup(0, 0, 'Cat Warrior 1 animation.png', 1, 2, (72, 16, 45, 41))
 cat_guard_group = [cat.clone(65, 40, False),
                    cat.clone(85, 40, False)]
 
+scientist = AnimatedSheet()
+scientist.setup(0, 0, 'Main Science.png', 1, 2, (97, 16, 31, 41))
+
+wizard = AnimatedSheet()
+wizard.setup(0, 0, 'Main Wizard.png', 1, 2, (97, 16, 31, 41))
+
+knight = AnimatedSheet()
+knight.setup(0, 0, 'Main Sad Knight.png', 1, 2, (97, 16, 31, 41))
+
+musician = AnimatedSheet()
+musician.setup(0, 0, 'Main Musician.png', 1, 2, (97, 16, 31, 41))
+
+renpig = AnimatedSheet()
+renpig.setup(0, 0, 'Main Renaissance.png', 1, 2, (97, 16, 31, 41))
+
+city = AnimatedSheet()
+city.setup(0, 0, 'city.png', 1, 1, (0, 0, 32, 32))
+
+politician = AnimatedSheet()
+politician.setup(0, 0, 'Main Politician.png', 1, 2, (97, 16, 31, 41))
+
+fut1 = AnimatedSheet()
+fut1.setup(0, 0, 'Main Future.png', 1, 2, (97, 16, 31, 41))
+
+fut2 = AnimatedSheet()
+fut2.setup(0, 0, 'Main Future 2.png', 1, 2, (97, 16, 31, 41))
+
+fut3 = AnimatedSheet()
+fut3.setup(0, 0, 'Main Future 3.png', 1, 2, (97, 16, 31, 41))
+
+fut4 = AnimatedSheet()
+fut4.setup(0, 0, 'Main Future Robot.png', 1, 2, (97, 16, 31, 41))
+
+bag = AnimatedSheet()
+bag.setup(0, 0, 'Bag_00_00.png', 1, 1, (0, 0, 32, 32))
+
 stories = {
     'cave': [
         StoryMusic('Intro.ogg'),
@@ -626,6 +685,8 @@ stories = {
         ),
 
         # Showing the village with pigs in it
+
+        StoryMusic('primitive.ogg'),
         StoryAnimation(
             40,
             Stage('First Scene.png', [campfire] + cavepig_group)
@@ -641,8 +702,6 @@ stories = {
         ),
 
         # The lizard arrives!
-        StoryMusic('primitive.ogg'),
-
         StoryAnimation(
             40,
             Stage('First Scene.png', [campfire]  + cavepig_group + lizard_group)
@@ -680,6 +739,7 @@ stories = {
 
         # Pig 1 gets out a club
         # Pig 2 gets out a surrender flag
+        StoryMusic('BanditCombat.ogg'),
         StoryMessage(
             ['country', 'exclaim', 'country', 'exclaim'],
             32, 19,
@@ -727,6 +787,7 @@ stories = {
         # Bronze Age
 
         # 3000 BC
+        StoryMusic('BronzeAge.wav'),
 
         # Pigs are alone
         StoryAnimation(
@@ -793,14 +854,17 @@ stories = {
 
         # castle of the cats - bird and pig fight the cats
         StoryAnimation(
-            40,
-            Stage('Castle.png', bronze_pig_warrior + cat_guard_group + [bird.clone(45, 40)])
+            80,
+            Stage('Castle.png', bronze_pig_warrior + cat_guard_group + [bird.clone(45, 40, True)])
         ),
-        StoryAnimation(
-            40,
-            Stage('Castle.png', bronze_pig_warrior + cat_guard_group + [bird.clone(45, 40)])
+        StoryMessage(
+            ['team', 'team', 'team', 'exclaim'],
+            10, 10,
+            Stage('Castle.png', bronze_pig_warrior + cat_guard_group + [bird.clone(45, 40, True), campfire.clone(90, 27)])
         ),
+
         # win, pig and cat look at each other and say "team team team !"
+        StoryJump('renaissance')
     ],
 
     'bronze_refuse': [
@@ -864,21 +928,68 @@ stories = {
         StoryMessage(
             ['club', 'club', 'club', 'exclaim'],
             60, 10,
-            Stage('Castle.png', [bronze_pig_1.clone(100, 40), big_flag.clone(90, 30)]))
+            Stage('Castle.png', [bronze_pig_1.clone(100, 40), big_flag.clone(90, 30)])),
+        StoryJump('renaissance')
+    ],
+
+    'renaissance': [
+        StoryFrame('RenaissanceFrame.png'),
+        StoryMusic('Renaissance.wav'),
+        StoryAnimation(80, Stage('roadToFair.png', [])),
+        StoryAnimation(80,
+            Stage('renaissanceFair.png', [renpig.clone(80, 37, True), scientist.clone(100, 37), wizard.clone(140, 37)])),
+        StoryDesignGlyph(
+            'tool',
+            Stage('renaissanceFair.png', [renpig.clone(80, 37, True), scientist.clone(100, 37), wizard.clone(140, 37)])),
+        StoryDesignGlyph(
+            'magic',
+            Stage('renaissanceFair.png', [renpig.clone(80, 37, True), scientist.clone(100, 37), wizard.clone(140, 37)])),
+        StoryDesignGlyph(
+            'think',
+            Stage('renaissanceFair.png', [renpig.clone(80, 37, True), scientist.clone(100, 37), wizard.clone(140, 37)])),
+        StoryAnimation(80,
+            Stage('renaissanceFair.png', [renpig.clone(80, 37, True), knight.clone(100, 37), musician.clone(140, 37)])),
+        StoryDesignGlyph(
+            'art',
+            Stage('renaissanceFair.png', [renpig.clone(80, 37, True), knight.clone(100, 37), musician.clone(140, 37)])),
+        StoryDesignGlyph(
+            'book',
+            Stage('renaissanceFair.png', [renpig.clone(80, 37, True), knight.clone(100, 37), musician.clone(140, 37)])),
+        StoryJump('future')
     ],
 
     'cave_surrender': [
         StoryMessage(['person', 'surrender', 'exclaim'],
                      165, 19,
                      Stage('First Scene.png', [campfire] + lizard_still_group + [cavepig2.clone(100, 27, True), cavepig.clone(160, 27), club.clone(44, 29), club.clone(90, 31, True), surrender_flag.clone(165, 34)]))
+    ],
+
+    'future': [
+        StoryFrame('FutureFrame.png'),
+        StoryMusic('Future.wav'),
+        StoryAnimation(120,
+                       Stage('painting.png', [])),
+        StoryDesignGlyph('old', Stage('painting.png', [])),
+        StoryAnimation(120,
+                       Stage('future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34, True), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37)])
+        ),
+        StoryMessage(['person', 'person', 'period'],
+                     30, 10,
+                     Stage('future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34, True), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37)])
+        ),
+        StoryDesignGlyph('give',
+                         Stage('future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34, True), fut1.clone(80, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(60, 35)])
+        ),
+        
+        StoryMessage(['book', 'question'],
+                     30, 10,
+                     Stage('future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(40, 34)])
+        )
     ]
 }
 
 
 game = Game()
-
-pygame.mixer.music.load(os.path.join('music', 'Intro.ogg'))
-pygame.mixer.music.play(-1)
 
 while True:
 
