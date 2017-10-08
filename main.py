@@ -247,7 +247,6 @@ class Dummy(Sprite):
         self.rect = (0, 0)
         self.image = pygame.image.load(os.path.join("data", "dummy.png"))
 
-
 class AnimatedSprite(Sprite):
     def __init__(self, x, y, images):
         Sprite.__init__(self)
@@ -273,6 +272,63 @@ class AnimatedSprite(Sprite):
 
         self.image = self.frames[self.frame]
 
+class AnimatedSheet(Sprite):
+    '''Animated sprite using a spritesheet.'''
+    def __init__(self):
+        Sprite.__init__(self)
+
+    def setup(self, x, y, sheet_name, ncols, nrows, clip_region):
+        sheet = pygame.image.load(os.path.join('data', sheet_name)).convert_alpha()
+
+        # The region inside a frame to use as the sprite
+        clip_region = pygame.Rect(clip_region)
+
+        # The size of a single frame
+        frame_width = sheet.get_width() / ncols
+        frame_height = sheet.get_height() / nrows
+        
+        frames = []
+        for col in range(ncols):
+            for row in range(nrows):
+                frame_region = pygame.Rect(col * frame_width,
+                                           row * frame_height,
+                                           frame_width,
+                                           frame_height)
+                frame_region = frame_region.clip(clip_region.move(col*frame_width,
+                                                                  row*frame_height))
+                
+                surf = pygame.Surface((frame_region.width, frame_region.height), pygame.SRCALPHA)
+                surf.blit(sheet, (0, 0), frame_region)
+
+                frames.append(surf)
+
+        self.image = frames[0]
+        self.rect = self.image.get_rect().move((x, y))
+        self.frames = frames
+        self.flipped_frames = [pygame.transform.flip(f, True, False) for f in self.frames]
+        self.timer = 0
+        self.frame = 0
+
+    def clone(self, x, y, flip=False):
+        spr = AnimatedSheet()
+        spr.image = self.frames[0]
+        spr.rect = self.image.get_rect().move((x, y))
+        if flip:
+            spr.frames = self.flipped_frames
+        else:
+            spr.frames = self.frames
+        spr.timer = 0
+        spr.frame = 0
+        return spr
+
+    def update(self):
+        self.timer += 1
+
+        if self.timer == 20:
+            self.timer = 0
+            self.frame = (self.frame + 1) % len(self.frames)
+
+        self.image = self.frames[self.frame]
 
 class AnimatedDummy(AnimatedSprite):
     def __init__(self, frames):
@@ -450,6 +506,12 @@ scaled_screen = Surface(dimensions, 0, virtual_screen)
 earth = AnimatedSprite(65, 5, ['earth0.png', 'earth1.png', 'earth2.png', 'earth3.png', 'earth4.png', 'earth5.png'])
 campfire = AnimatedSprite(60, 41, ['fire1.png', 'fire2.png'])
 
+# arguments so you dont forget: setup(self, x, y, sheet_name, ncols, nrows, clip_region)
+cavepig = AnimatedSheet()
+cavepig.setup(0, 0, 'Main Cavemen.png', 1, 2, (97, 16, 31, 41))
+
+cavepig_group = [cavepig.clone(100, 27), cavepig.clone(160, 27, True)]
+
 stories = {
     'cave': [
         StoryAnimation(
@@ -470,17 +532,17 @@ stories = {
         ),
         StoryAnimation(
             40,
-            Stage('First Scene.png', [campfire])
+            Stage('First Scene.png', [campfire] + cavepig_group)
         ),
         StoryMessage(
             ['country', 'exclaim', 'country', 'exclaim'],
             32, 19,
-            Stage('First Scene.png', [campfire])
+            Stage('First Scene.png', [campfire] + cavepig_group)
         ),
         StoryMessage(
             ['earth', 'period'],
             42, 29,
-            Stage('First Scene.png', [campfire])
+            Stage('First Scene.png', [campfire] + cavepig_group)
         ),
         #StoryChoice(
         #    [(['fight', 'evil', 'person'], 'cave_fight'),
@@ -493,7 +555,12 @@ stories = {
         ),
         StoryAnimation(
             40,
-            Stage('First Scene.png', [])
+            Stage('First Scene.png', []  + cavepig_group)
+        ),
+        StoryMessage(
+            ['exclaim'],
+            32, 19,
+            Stage('First Scene.png', [campfire] + cavepig_group)
         ),
         StoryAnimation(
             40,
