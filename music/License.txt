@@ -2,7 +2,7 @@
 Isaac Bennett was the composer of: Battle2, Renaissance, BronzeAge, GameOver, and Future'
 
 
-Chris Roach and Hiahm "Chad" Mahon were the composers of: absalom, allon, BanditCombat, GameOver, Intro, and Primitive
+Chris Roach and Hiahm "Chad" Mahon were the composers of: BanditCombat, GameOver, Intro, and Primitive
 
 =======================================
 Samples used include the following:
@@ -11,3 +11,8 @@ The "LITTLE-SCALE_-_Free_8_Bit_Samples_Packs" sample pack from: Woolyss @ https:
 -----------------------------------
 Specifically from this compilation: "Sega Master System YM2413 Preset Instruments"
  by Sebastian Tomczak @ http://little-scale.blogspot.com/2009/10/massive-ym2413-sample-pack-245-samples.html
+
+Quote: "License This Sega Master System 2 SN76489 sample pack by Sebastian Tomczak is licensed under a Creative Commons AttributionNoncommercial 3.0 Unported License.
+ More information about this license can be viewed here: http://creativecommons.org/licenses/bync/3.0/"
+
+
