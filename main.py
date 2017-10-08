@@ -12,6 +12,8 @@ SCREEN_ZOOM = 2         # Scale factor of the whole screen
 FRAMES_PER_SECOND = 40  # How many frames to draw per second
 CANVAS_ZOOM = 4         # Scale factor of the art canvas
 DEBUG = False           # Whether debug information should show up
+#START_STORY = 'cave'
+START_STORY = 'bronze_agree'
 
 # Dimensions of the glyphs (in virtual pixels)
 GLYPH_WIDTH = 20        # How wide a glyph 
@@ -31,6 +33,7 @@ glyphs = {
     'house':   None,
     'person':  None,
     'earth':   None,
+    'team':    None,
     'exclaim': pygame.image.load(os.path.join('data', 'exclaim.png')),
     'question': pygame.image.load(os.path.join('data', 'question.png')),
     'period': pygame.image.load(os.path.join('data', 'period.png')),
@@ -371,7 +374,8 @@ class Stage(Sprite):
 
 def render_text(surf, message, x, y):
     for i in range(len(message)):
-        surf.blit(glyphs[message[i]], (x + GLYPH_WIDTH*i, y))
+        if message[i] in glyphs and glyphs[message[i]] is not None:
+            surf.blit(glyphs[message[i]], (x + GLYPH_WIDTH*i, y))
 
 class TextSprite(Sprite):
     def __init__(self, message, x, y):
@@ -463,7 +467,7 @@ class Game(object):
         self.object_space = LayeredUpdates()
 
         # Starting mode
-        self._jump('cave', 0)
+        self._jump(START_STORY, 0)
 
     def _jump(self, story, index):
         self.story = story
@@ -563,6 +567,39 @@ club.setup(0, 0, 'Wooden Club_00_00.png', 1, 1, (0, 0, 32, 32))
 
 surrender_flag = AnimatedSheet()
 surrender_flag.setup(0, 0, 'surrenderFlag.png', 1, 1, (0, 0, 16, 16))
+bronze_pig_group = []
+cavepig2 = AnimatedSheet()
+cavepig2.setup(0, 0, 'Main Cavemen 2.png', 1, 2, (97, 16, 31, 41))
+
+big_flag = AnimatedSheet()
+big_flag.setup(0, 0, 'bigFlag.png', 1, 1, (0, 0, 32, 32))
+
+bronze_pig_1 = AnimatedSheet()
+bronze_pig_1.setup(0, 0, 'Main Bronze.png', 1, 2, (97, 16, 31, 41))
+bronze_pig_2 = AnimatedSheet()
+bronze_pig_2.setup(0, 0, 'Main Bronze 2.png', 1, 2, (97, 16, 31, 41))
+spear = AnimatedSheet()
+spear.setup(0, 0, 'Wooden Spear_00_00.png', 1, 1, (0, 0, 32, 32))
+
+bronze_pig_group = [bronze_pig_1.clone(25, 27, True), bronze_pig_2.clone(45, 27)]
+bronze_pig_alert_group = [bronze_pig_1.clone(25, 27, True), bronze_pig_2.clone(45, 27, True)]
+bronze_pig_warrior = [bronze_pig_1.clone(25, 40, True), spear.clone(35, 50)]
+
+bird = AnimatedSheet()
+bird.setup(0, 0, 'Bird Warrior 1 animation.png', 1, 2, (97, 16, 31, 41))
+bird_far = [bird.clone(170, 27)]
+bird_far_other_direction = [bird.clone(170, 27, True)]
+bird_close = [bird.clone(100, 27)]
+
+lone_pig_on_road_1 = [bronze_pig_1.clone(10, 27, True)]
+lone_pig_on_road_2 = [bronze_pig_1.clone(50, 27, True)]
+lone_pig_on_road_3 = [bronze_pig_1.clone(100, 27, True)]
+lone_pig_on_road_4 = [bronze_pig_1.clone(150, 27, True)]
+
+cat = AnimatedSheet()
+cat.setup(0, 0, 'Cat Warrior 1 animation.png', 1, 2, (72, 16, 45, 41))
+cat_guard_group = [cat.clone(65, 40, False),
+                   cat.clone(85, 40, False)]
 
 stories = {
     'cave': [
@@ -691,8 +728,145 @@ stories = {
 
         # 3000 BC
 
-        #
+        # Pigs are alone
+        StoryAnimation(
+            40,
+            Stage('Tents.png', bronze_pig_group)
+        ),
+
+        # Birds appear
+        StoryAnimation(
+            40,
+            Stage('Tents.png', bronze_pig_group + bird_far)
+        ),
+
+        # learn "team/friendship" symbol
+        StoryDesignGlyph(
+            'team',
+            Stage('Tents.png', bronze_pig_alert_group + bird_close)
+        ),
+
+        # "person team person ?"
+        StoryMessage(
+            ['person', 'team', 'person', 'question'],
+            50, 19,
+            Stage('Tents.png', bronze_pig_alert_group + bird_close)
+        ),
+
+        # choice - team up with birds or not?
+        StoryChoice(
+            [(['person', 'team', 'person'], 'bronze_agree'),
+             (['surrender', 'period'], 'bronze_refuse')],
+            Stage('Tents.png', bronze_pig_alert_group + bird_close)
+        ),
     ],
+
+    'bronze_agree': [
+        # bird and pig on path (roadToFair)
+        StoryMessage(
+            ['person', 'team', 'person', 'period'],
+            50, 19,
+            Stage('Tents.png', bronze_pig_group + bird_close)
+        ),
+        StoryMessage(
+            ['team', 'period'],
+            60, 19,
+            Stage('Tents.png', bronze_pig_group + bird_close)
+        ),
+
+        StoryAnimation(
+            40,
+            Stage('roadToFair.png', [bronze_pig_1.clone(40, 27, True), bird.clone(80, 27, True)])
+        ),
+        StoryAnimation(
+            40,
+            Stage('roadToFair.png', [bronze_pig_1.clone(60, 27, True), bird.clone(100, 27, True)])
+        ),
+        StoryAnimation(
+            40,
+            Stage('roadToFair.png', [bronze_pig_1.clone(80, 27, True), bird.clone(120, 27, True)])
+        ),
+        StoryAnimation(
+            40,
+            Stage('roadToFair.png', [bronze_pig_1.clone(100, 27, True), bird.clone(140, 27, True)])
+        ),
+
+        # castle of the cats - bird and pig fight the cats
+        StoryAnimation(
+            40,
+            Stage('Castle.png', bronze_pig_warrior + cat_guard_group + [bird.clone(45, 40)])
+        ),
+        StoryAnimation(
+            40,
+            Stage('Castle.png', bronze_pig_warrior + cat_guard_group + [bird.clone(45, 40)])
+        ),
+        # win, pig and cat look at each other and say "team team team !"
+    ],
+
+    'bronze_refuse': [
+        StoryMessage(
+            ['period', 'period', 'period', 'club', 'question'],
+            50, 19,
+            Stage('Tents.png', bronze_pig_alert_group + bird_close)
+        ),
+        StoryAnimation(
+            40,
+            Stage('Tents.png', bronze_pig_alert_group + bird_close)
+        ),
+        StoryAnimation(
+            40,
+            Stage('Tents.png', bronze_pig_alert_group + bird_far_other_direction)
+        ),
+        StoryAnimation(
+            80,
+            Stage('Tents.png', bronze_pig_alert_group)
+        ),
+        # lone pig on the road
+        StoryAnimation(
+            40,
+            Stage('roadToFair.png', lone_pig_on_road_1)
+        ),
+        StoryAnimation(
+            40,
+            Stage('roadToFair.png', lone_pig_on_road_2)
+        ),
+        StoryAnimation(
+            40,
+            Stage('roadToFair.png', lone_pig_on_road_3)
+        ),
+        StoryAnimation(
+            40,
+            Stage('roadToFair.png', lone_pig_on_road_4)
+        ),
+        # castle of the cats - pig defeats cats
+        StoryAnimation(
+            40,
+            Stage('Castle.png', cat_guard_group)
+        ),
+        StoryAnimation(
+            160,
+            Stage('Castle.png', bronze_pig_warrior + cat_guard_group)
+        ),
+        StoryMessage(
+            ['club', 'club', 'club', 'exclaim'],
+            10, 10,
+            Stage('Castle.png', bronze_pig_warrior + cat_guard_group + [campfire.clone(65, 40), campfire.clone(85, 40), campfire.clone(30, 18), campfire.clone(100, 30)])
+        ),
+        # lone pig on the road
+        StoryAnimation(
+            120,
+            Stage('roadToFair.png', [bronze_pig_1.clone(50, 27)])
+        ),
+        # castle of the birds - pig defeats birds
+        StoryAnimation(80, Stage('Castle.png', [bronze_pig_1.clone(100, 40), bird.clone(50, 40, True)])),
+        StoryAnimation(80, Stage('Castle.png', [bronze_pig_1.clone(100, 40), bird.clone(50, 40, True), campfire.clone(50, 40)])),
+        # win, pig says "weapon weapon weapon !"
+        StoryMessage(
+            ['club', 'club', 'club', 'exclaim'],
+            60, 10,
+            Stage('Castle.png', [bronze_pig_1.clone(100, 40), big_flag.clone(90, 30)]))
+    ],
+
     'cave_surrender': [
         StoryMessage(['person', 'surrender', 'exclaim'],
                      165, 19,
