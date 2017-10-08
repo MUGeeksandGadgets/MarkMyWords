@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys, os
 import pygame
 import math
@@ -12,8 +13,8 @@ SCREEN_ZOOM = 2         # Scale factor of the whole screen
 FRAMES_PER_SECOND = 40  # How many frames to draw per second
 CANVAS_ZOOM = 4         # Scale factor of the art canvas
 DEBUG = False           # Whether debug information should show up
-#START_STORY = 'cave'
-START_STORY = 'future'
+START_STORY = 'cave'
+#START_STORY = 'future'
 
 # Dimensions of the glyphs (in virtual pixels)
 GLYPH_WIDTH = 20        # How wide a glyph 
@@ -52,8 +53,9 @@ emblems = {
     'think': pygame.image.load(os.path.join('data', 'Drawable Images', 'thinking.png')),
     'team': pygame.image.load(os.path.join('data', 'Drawable Images', 'team.png')),
     'country': pygame.image.load(os.path.join('data', 'Drawable Images', 'country.png')),
-    'old', pygame.image.load(os.path.join('data', 'Drawable Images', 'antiquated.png')),
-    'give', pygame.image.load(os.path.join('data', 'Drawable Images', 'give.png'))
+    'old': pygame.image.load(os.path.join('data', 'Drawable Images', 'antiquated.png')),
+    'give': pygame.image.load(os.path.join('data', 'Drawable Images', 'give.png')),
+    'book': pygame.image.load(os.path.join('data', 'Drawable Images', 'book.png'))
 }
 
 # Object types
@@ -441,6 +443,10 @@ class StoryMusic(object):
         pygame.mixer.music.load(os.path.join('music', self.song))
         pygame.mixer.music.play(-1)
 
+class StoryEnd(object):
+    def __init__(self, msg):
+        self.msg = msg
+
 class ChoiceMatrix(Sprite):
     def __init__(self, game, choices):
         Sprite.__init__(self)
@@ -518,6 +524,9 @@ class Game(object):
         elif type(st) is StoryFrame:
             self.frame.set_image(st.frame_name)
             self._jump(self.story, self.index + 1)
+        elif type(st) is StoryEnd:
+            print(st.msg)
+            sys.exit(0)
         if DEBUG:
             self.object_space.add(self.debug_readout, layer=2)
         self.object_space.add(self.frame, layer=1)
@@ -526,7 +535,7 @@ class Game(object):
     def update(self):
         st = stories[self.story][self.index]
         if type(st) is StoryMessage:
-            if pygame.K_SPACE in keys_just_pressed:
+            if pygame.K_SPACE in keys_just_pressed or mouse_down:
                 self._jump(self.story, self.index + 1)
         elif type(st) is StoryAnimation:
             self.timer -= 1
@@ -751,7 +760,7 @@ stories = {
         ),
         StoryChoice(
             [(['person', 'club', 'person', 'period'], 'cave_fight'),
-             (['surrender', 'period'], 'cave_surrender')],
+             (['surrender', 'period'], 'nuke')],
             Stage('First Scene.png', [campfire] + cavepig_group + lizard_still_group + [club.clone(44, 29), club.clone(90, 31, True), surrender_flag.clone(165, 34)])
         ),
     ],
@@ -984,12 +993,74 @@ stories = {
         StoryMessage(['book', 'question'],
                      30, 10,
                      Stage('future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(40, 34)])
+        ),
+
+        StoryMessage(['earth', 'country', 'person', 'person', 'give', 'period', 'period', 'period'],
+                     40, 15,
+                     Stage('future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(40, 34)])
+        ),
+        StoryMessage(['tool', 'tool', 'period', 'club', 'club', 'period', 'magic', 'period'],
+                     45, 20,
+                     Stage('future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(40, 34)])
+        ),
+        StoryMessage(['earth', 'country', 'exclaim'],
+                     50, 25,
+                     Stage('future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(40, 34)])
+        ),
+        StoryMessage(['earth', 'country', 'person', 'old', 'book', 'art', 'period'],
+                     55, 20,
+                     Stage('future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(40, 34)])
+        ),
+        StoryChoice(
+            [(['team', 'period'], 'win'), (['club', 'period'], 'nuke')],
+            Stage('future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(40, 34)])
         )
+    ],
+    'win': [
+        StoryAnimation(60, Stage('painting.png', [])),
+        StoryEnd('Ending 1')
+    ],
+    'nuke': [
+        StoryMusic('GameOver.wav'),
+        StoryAnimation(10, Stage('mushroom1.png', [])),
+        StoryAnimation(10, Stage('mushroom2.png', [])),
+        StoryAnimation(10, Stage('mushroom3.png', [])),
+        StoryAnimation(10, Stage('mushroom4.png', [])),
+        StoryAnimation(10, Stage('mushroom6.png', [])),
+        StoryAnimation(10, Stage('mushroom7.png', [])),
+        StoryAnimation(10, Stage('mushroom8.png', [])),
+        StoryAnimation(10, Stage('mushroom9.png', [])),
+        StoryAnimation(140, Stage('mushroom10.png', [])),
+        StoryEnd('Ending 2')
     ]
 }
 
+title_image = pygame.image.load(os.path.join('data', 'title.png'))
 
 game = Game()
+
+closetitle = False
+while not closetitle:
+    # Handle user input (mouse and quitting).
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            sys.exit()
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            closetitle = True
+
+
+    # Draw everything onto the virtual screen.
+    virtual_screen.fill((0, 0, 0))
+    virtual_screen.blit(title_image, (0, 0))
+
+    # Scale and draw onto the real screen.
+    pygame.transform.scale(virtual_screen, dimensions, scaled_screen)
+    screen.blit(scaled_screen, (0, 0))
+    pygame.display.flip()
+
+    # Wait for the next frame.
+    clock.tick(FRAMES_PER_SECOND)
+
 
 while True:
 
