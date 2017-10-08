@@ -1,5 +1,6 @@
 import sys, os
 import pygame
+import math
 from pygame import Surface
 from pygame.sprite import Sprite
 from pygame.sprite import LayeredUpdates
@@ -155,6 +156,12 @@ class Canvas(Sprite):
                                  y * CANVAS_ZOOM,
                                  CANVAS_ZOOM, CANVAS_ZOOM))
 
+        # Draw the grid
+        for y in range(len(self.pixels)):
+            pygame.draw.line(self.image, (100, 100, 200), (0, y * CANVAS_ZOOM), (GLYPH_WIDTH * CANVAS_ZOOM, y * CANVAS_ZOOM))
+        for x in range(len(self.pixels)):
+            pygame.draw.line(self.image, (100, 100, 200), (x * CANVAS_ZOOM, 0), (x * CANVAS_ZOOM, GLYPH_HEIGHT * CANVAS_ZOOM))
+
     def to_surface(self):
         surf = pygame.Surface((GLYPH_WIDTH, GLYPH_HEIGHT))
         surf.set_colorkey((255, 0, 255))
@@ -168,8 +175,8 @@ class Canvas(Sprite):
         """Update the state of the canvas."""
         # If the user is painting, place a pixel.
         if self.is_selecting():
-            self.pen_x = (mouse_x - self.rect[0]) / CANVAS_ZOOM
-            self.pen_y = (mouse_y - self.rect[1]) / CANVAS_ZOOM
+            self.pen_x = math.floor((mouse_x - self.rect[0]) / CANVAS_ZOOM)
+            self.pen_y = math.floor((mouse_y - self.rect[1]) / CANVAS_ZOOM)
 
             if mouse_held:
                 if self._was_drawing:
@@ -332,6 +339,25 @@ class StoryDesignGlyph(object):
         self.glyph_name = glyph_name
         self.stage = stage
 
+class ChoiceMatrix(Sprite):
+    def __init__(self, game, choices):
+        Sprite.__init__()
+
+        self.game = game
+        self.choices = choices
+
+        # Draw the choice matrix
+
+    def _redraw_image(self):
+        for choice in self.choices:
+            pass
+
+    def update(self):
+        # Update sprite if hovered over a choice
+
+        # Activate choice if clicked
+        pass
+
 class Game(object):
     """
     A Game handles everything in the game.
@@ -373,6 +399,8 @@ class Game(object):
             self.object_space.add(self.equalssign, layer=3)
         elif type(st) is StoryMessage:
             self.object_space.add(TextSprite(st.message, st.x, st.y), layer=3)
+        elif type(st) is StoryChoice:
+            self.object_space.add(ChoiceMatrix(self, st.choices))
         if DEBUG:
             self.object_space.add(self.debug_readout, layer=2)
         self.object_space.add(self.frame, layer=1)
@@ -453,7 +481,40 @@ stories = {
             ['earth', 'period'],
             42, 29,
             Stage('First Scene.png', [campfire])
-        )
+        ),
+        #StoryChoice(
+        #    [(['fight', 'evil', 'person'], 'cave_fight'),
+        #     (['surrender', 'country'], 'cave_surrender')],
+        #    Stage('First Scene.png', [campfire])
+        #),
+        StoryAnimation(
+            40,
+            Stage('primativeHomeIn.png', [])
+        ),
+        StoryAnimation(
+            40,
+            Stage('First Scene.png', [])
+        ),
+        StoryAnimation(
+            40,
+            Stage('Tents.png', [])
+        ),
+        StoryAnimation(
+            40,
+            Stage('Castle.png', [])
+        ),
+        StoryAnimation(
+            40,
+            Stage('roadToFair.png', [])
+        ),
+        StoryAnimation(
+            40,
+            Stage('renaissanceFair.png', [])
+        ),
+        StoryAnimation(
+            40,
+            Stage('roadToFair.png', [])
+        ),
     ]
 }
 
