@@ -980,40 +980,40 @@ stories = {
                        Stage('painting.png', [])),
         StoryDesignGlyph('old', Stage('painting.png', [])),
         StoryAnimation(120,
-                       Stage('future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34, True), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37)])
+                       Stage('Future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34, True), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37)])
         ),
         StoryMessage(['person', 'person', 'period'],
                      30, 10,
-                     Stage('future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34, True), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37)])
+                     Stage('Future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34, True), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37)])
         ),
         StoryDesignGlyph('give',
-                         Stage('future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34, True), fut1.clone(80, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(60, 35)])
+                         Stage('Future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34, True), fut1.clone(80, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(60, 35)])
         ),
         
         StoryMessage(['book', 'question'],
                      30, 10,
-                     Stage('future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(40, 34)])
+                     Stage('Future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(40, 34)])
         ),
 
         StoryMessage(['earth', 'country', 'person', 'person', 'give', 'period', 'period', 'period'],
                      40, 15,
-                     Stage('future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(40, 34)])
+                     Stage('Future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(40, 34)])
         ),
         StoryMessage(['tool', 'tool', 'period', 'club', 'club', 'period', 'magic', 'period'],
                      45, 20,
-                     Stage('future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(40, 34)])
+                     Stage('Future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(40, 34)])
         ),
         StoryMessage(['earth', 'country', 'exclaim'],
                      50, 25,
-                     Stage('future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(40, 34)])
+                     Stage('Future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(40, 34)])
         ),
         StoryMessage(['earth', 'country', 'person', 'old', 'book', 'art', 'period'],
                      55, 20,
-                     Stage('future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(40, 34)])
+                     Stage('Future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(40, 34)])
         ),
         StoryChoice(
             [(['team', 'period'], 'win'), (['club', 'period'], 'nuke')],
-            Stage('future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(40, 34)])
+            Stage('Future.png', [city.clone(35, 27), fut4.clone(20, 30), politician.clone(50, 34), fut1.clone(100, 30), fut2.clone(110, 35), fut3.clone(140, 37), bag.clone(40, 34)])
         )
     ],
     'win': [
