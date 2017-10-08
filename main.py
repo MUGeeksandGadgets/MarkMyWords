@@ -1017,7 +1017,8 @@ stories = {
         )
     ],
     'win': [
-        StoryAnimation(60, Stage('painting.png', [])),
+        StoryMusic('Victory.wav'),
+        StoryAnimation(300, Stage('painting.png', [])),
         StoryEnd('Ending 1')
     ],
     'nuke': [
